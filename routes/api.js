@@ -334,4 +334,17 @@ router.post('/pc/wake', requireAdmin, (req, res) => {
   });
 });
 
+// ─── Snapshots ────────────────────────────────────────────────────────────────
+
+router.get('/snapshots/:serverId/manifest', requireAuth, async (req, res) => {
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch(`http://${process.env.PC_HOST}:8200/${req.params.serverId}/manifest.json`);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.json({ serverId: req.params.serverId, snapshots: [] });
+  }
+});
+
 module.exports = router;

@@ -8,6 +8,17 @@ let serverStatuses = [];
 let logSearchTimeout = null;
 let backupStates = {};
 
+// ── World History State ────────────────────────────────
+let historyServerId = null;
+let historySnapshots = [];
+let calendarDate = new Date();
+let selectedSnapshot = null;
+let timelapseTimer = null;
+let timelapseIndex = 0;
+let timelapseDates = [];
+let savedCameraHash = '';
+const PC_TILE_BASE = `http://${location.hostname}:8200`;
+
 // ── Boot ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   if (token) verifyAndLoad(); else showScreen('auth');
@@ -180,6 +191,7 @@ function navigateTo(page, serverId = null) {
     if (page === 'users') loadUsers();
     if (page === 'files') loadFiles(currentPath);
     if (page === 'backups') renderBackupGrid();
+    if (page === 'history') initHistoryPage();
   }
 }
 
@@ -213,6 +225,217 @@ async function wakePc() {
   showToast('WoL packet sent — PC booting in ~30s', 'success');
   btn.textContent = 'Waking…';
   setTimeout(updateInfraStatus, 35000);
+}
+
+// ── World History ─────────────────────────────────────
+async function initHistoryPage() {
+  const srvs = await api('/api/servers');
+  if (!srvs || srvs.error || !srvs.length) return;
+
+  const tabs = document.getElementById('history-server-tabs');
+  tabs.innerHTML = srvs.map((s, i) => `
+    <button class="history-server-tab ${i === 0 ? 'active' : ''}" onclick="switchHistoryServer('${s.id}', this)">${s.name}</button>
+  `).join('');
+
+  document.querySelectorAll('.history-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.history-view').forEach(v => v.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`history-${tab.dataset.view}-view`).classList.add('active');
+    });
+  });
+
+  document.getElementById('cal-prev').addEventListener('click', () => {
+    calendarDate.setMonth(calendarDate.getMonth() - 1);
+    renderCalendar();
+  });
+  document.getElementById('cal-next').addEventListener('click', () => {
+    calendarDate.setMonth(calendarDate.getMonth() + 1);
+    renderCalendar();
+  });
+
+  await switchHistoryServer(srvs[0].id, tabs.querySelector('.history-server-tab'));
+}
+
+async function switchHistoryServer(serverId, btn) {
+  historyServerId = serverId;
+  document.querySelectorAll('.history-server-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const res = await api(`/api/snapshots/${serverId}/manifest`);
+  historySnapshots = res?.snapshots || [];
+  selectedSnapshot = null;
+
+  renderCalendar();
+  renderTimeline();
+  updateTimelapseRange();
+
+  document.getElementById('history-viewer-wrap').style.display = 'none';
+  document.getElementById('history-snapshot-info').innerHTML =
+    `<div style="color:var(--text3);font-size:13px;text-align:center;padding:40px 0">${historySnapshots.length} snapshot${historySnapshots.length !== 1 ? 's' : ''} available — select a date</div>`;
+}
+
+function renderCalendar() {
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+  const label = calendarDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  document.getElementById('cal-month-label').textContent = label;
+
+  const snapshotDates = new Set(historySnapshots.map(s => s.date));
+  const today = new Date().toISOString().slice(0, 10);
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+  let html = days.map(d => `<div class="cal-day-header">${d}</div>`).join('');
+  for (let i = 0; i < firstDay; i++) html += '<div class="cal-day"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const hasSnap = snapshotDates.has(dateStr);
+    const isToday = dateStr === today;
+    const isSelected = selectedSnapshot?.date === dateStr;
+    const cls = ['cal-day', hasSnap ? 'has-snapshot' : '', isToday ? 'today' : '', isSelected ? 'selected' : ''].filter(Boolean).join(' ');
+    const click = hasSnap ? `onclick="selectSnapshot('${dateStr}')"` : '';
+    html += `<div class="${cls}" ${click}>${d}</div>`;
+  }
+
+  document.getElementById('calendar-grid').innerHTML = html;
+}
+
+function selectSnapshot(dateStr) {
+  selectedSnapshot = historySnapshots.find(s => s.date === dateStr);
+  if (!selectedSnapshot) return;
+  renderCalendar();
+
+  const players = Array.isArray(selectedSnapshot.playersOnline) && selectedSnapshot.playersOnline.length
+    ? selectedSnapshot.playersOnline.join(', ')
+    : 'None recorded';
+
+  document.getElementById('history-snapshot-info').innerHTML = `
+    <div style="font-size:15px;font-weight:600;margin-bottom:12px">${new Date(selectedSnapshot.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+    <div class="snapshot-info-row"><span class="snapshot-info-label">Tiles</span><span class="snapshot-info-value">${selectedSnapshot.tileCount?.toLocaleString() || '—'}</span></div>
+    <div class="snapshot-info-row"><span class="snapshot-info-label">Size</span><span class="snapshot-info-value">${selectedSnapshot.sizeMB || '—'} MB</span></div>
+    <div class="snapshot-info-row"><span class="snapshot-info-label">Players online</span><span class="snapshot-info-value">${escHtml(players)}</span></div>
+    <div class="snapshot-info-row"><span class="snapshot-info-label">Taken at</span><span class="snapshot-info-value">${selectedSnapshot.timestamp?.slice(11, 16) || '—'}</span></div>
+    <button class="btn-primary" style="width:100%;margin-top:12px;justify-content:center" onclick="loadSnapshotViewer('${dateStr}')">🗺 View Map</button>
+  `;
+
+  document.getElementById('history-viewer-wrap').style.display = 'none';
+}
+
+function loadSnapshotViewer(dateStr) {
+  const wrap = document.getElementById('history-viewer-wrap');
+  const iframe = document.getElementById('history-bluemap-iframe');
+  const label = document.getElementById('history-viewer-label');
+  label.textContent = `World on ${dateStr}`;
+  iframe.src = `http://${location.hostname}:8100/`;
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({ behavior: 'smooth' });
+}
+
+function toggleFullscreenViewer() {
+  const iframe = document.getElementById('history-bluemap-iframe');
+  if (iframe.requestFullscreen) iframe.requestFullscreen();
+}
+
+function renderTimeline() {
+  const scroll = document.getElementById('timeline-scroll');
+  if (!historySnapshots.length) {
+    scroll.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:20px">No snapshots available</div>';
+    return;
+  }
+  scroll.innerHTML = [...historySnapshots].reverse().map(s => `
+    <div class="timeline-card" onclick="loadTimelineSnapshot('${s.date}', this)">
+      <div class="timeline-card-thumb">🗺</div>
+      <div class="timeline-card-date">${s.date}</div>
+      <div class="timeline-card-meta">${s.sizeMB || '?'} MB · ${Array.isArray(s.playersOnline) ? s.playersOnline.length : 0} players</div>
+    </div>
+  `).join('');
+}
+
+function loadTimelineSnapshot(dateStr, card) {
+  document.querySelectorAll('.timeline-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  const wrap = document.getElementById('timeline-viewer-wrap');
+  const iframe = document.getElementById('timeline-bluemap-iframe');
+  iframe.src = `http://${location.hostname}:8100/`;
+  wrap.style.display = 'block';
+}
+
+function updateTimelapseRange() {
+  if (!historySnapshots.length) return;
+  const dates = historySnapshots.map(s => s.date);
+  document.getElementById('timelapse-from').value = dates[0];
+  document.getElementById('timelapse-to').value = dates[dates.length - 1];
+}
+
+function timelapsePlay() {
+  const from = document.getElementById('timelapse-from').value;
+  const to = document.getElementById('timelapse-to').value;
+  const speed = parseInt(document.getElementById('timelapse-speed').value);
+
+  timelapseDates = historySnapshots.filter(s => s.date >= from && s.date <= to).map(s => s.date);
+  if (!timelapseDates.length) { showToast('No snapshots in selected range', 'error'); return; }
+
+  timelapseIndex = 0;
+  document.getElementById('timelapse-play-btn').disabled = true;
+  document.getElementById('timelapse-pause-btn').disabled = false;
+
+  function showFrame() {
+    const dateStr = timelapseDates[timelapseIndex];
+    document.getElementById('timelapse-bluemap-iframe').src = `http://${location.hostname}:8100/`;
+    document.getElementById('timelapse-frame-label').textContent = `Day ${timelapseIndex + 1} of ${timelapseDates.length} — ${dateStr}`;
+    const pct = ((timelapseIndex + 1) / timelapseDates.length) * 100;
+    document.getElementById('timelapse-progress-fill').style.width = `${pct}%`;
+    timelapseIndex++;
+    if (timelapseIndex < timelapseDates.length) {
+      timelapseTimer = setTimeout(showFrame, speed);
+    } else {
+      timelapsePause();
+    }
+  }
+  showFrame();
+}
+
+function timelapsePause() {
+  clearTimeout(timelapseTimer);
+  document.getElementById('timelapse-play-btn').disabled = false;
+  document.getElementById('timelapse-pause-btn').disabled = true;
+}
+
+function timelapseStep(dir) {
+  timelapsePause();
+  if (!timelapseDates.length) {
+    const from = document.getElementById('timelapse-from').value;
+    const to = document.getElementById('timelapse-to').value;
+    timelapseDates = historySnapshots.filter(s => s.date >= from && s.date <= to).map(s => s.date);
+  }
+  timelapseIndex = Math.max(0, Math.min(timelapseDates.length - 1, timelapseIndex + dir));
+  const dateStr = timelapseDates[timelapseIndex];
+  if (!dateStr) return;
+  document.getElementById('timelapse-bluemap-iframe').src = `http://${location.hostname}:8100/`;
+  document.getElementById('timelapse-frame-label').textContent = `Day ${timelapseIndex + 1} of ${timelapseDates.length} — ${dateStr}`;
+}
+
+function timelapseSaveCamera() {
+  showToast('Viewpoint saved — timelapse will use current map position', 'success');
+}
+
+function loadCompareA() {
+  const date = document.getElementById('compare-date-a').value;
+  if (!date) return;
+  document.getElementById('compare-label-a').textContent = date;
+  document.getElementById('compare-iframe-a').src = `http://${location.hostname}:8100/`;
+}
+
+function loadCompareB() {
+  const date = document.getElementById('compare-date-b').value;
+  if (!date) return;
+  document.getElementById('compare-label-b').textContent = date;
+  document.getElementById('compare-iframe-b').src = `http://${location.hostname}:8100/`;
 }
 
 // ── Dashboard ─────────────────────────────────────────

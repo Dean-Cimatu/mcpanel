@@ -64,6 +64,10 @@
           <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
           Backups
         </a>
+        <a class="nav-item" data-page="history">
+          <svg viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+          World History
+        </a>
       </div>
 
       <div class="nav-group" id="servers-nav">
@@ -179,6 +183,114 @@
           <div><div class="page-title">Backups</div><div class="page-subtitle">Archive history and manual triggers</div></div>
         </div>
         <div class="backup-grid" id="backup-grid"></div>
+      </div>
+
+      <!-- World History -->
+      <div id="page-history" class="page">
+        <div class="page-header">
+          <div><div class="page-title">World History</div><div class="page-subtitle">Browse your world through time</div></div>
+        </div>
+
+        <!-- Server selector tabs -->
+        <div class="history-server-tabs" id="history-server-tabs"></div>
+
+        <!-- View mode tabs -->
+        <div class="history-view-tabs">
+          <button class="history-tab active" data-view="calendar">📅 Calendar</button>
+          <button class="history-tab" data-view="timeline">🎞 Timeline</button>
+          <button class="history-tab" data-view="timelapse">▶ Timelapse</button>
+          <button class="history-tab" data-view="compare">⚖ Compare</button>
+        </div>
+
+        <!-- Calendar View -->
+        <div id="history-calendar-view" class="history-view active">
+          <div class="history-calendar-layout">
+            <div class="history-calendar-panel">
+              <div class="calendar-nav">
+                <button class="btn-secondary" id="cal-prev">‹</button>
+                <span id="cal-month-label" style="font-weight:600;font-size:15px"></span>
+                <button class="btn-secondary" id="cal-next">›</button>
+              </div>
+              <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
+            <div class="history-snapshot-info" id="history-snapshot-info">
+              <div style="color:var(--text3);font-size:13px;text-align:center;padding:40px 0">Select a date to view the world</div>
+            </div>
+          </div>
+          <div class="history-viewer-wrap" id="history-viewer-wrap" style="display:none">
+            <div class="history-viewer-header">
+              <span id="history-viewer-label" style="font-weight:600"></span>
+              <button class="btn-secondary" onclick="toggleFullscreenViewer()">⛶ Fullscreen</button>
+            </div>
+            <iframe id="history-bluemap-iframe" class="history-bluemap-frame" src="about:blank"></iframe>
+          </div>
+        </div>
+
+        <!-- Timeline View -->
+        <div id="history-timeline-view" class="history-view">
+          <div class="timeline-scroll" id="timeline-scroll"></div>
+          <div class="history-viewer-wrap" id="timeline-viewer-wrap" style="display:none">
+            <iframe id="timeline-bluemap-iframe" class="history-bluemap-frame" src="about:blank"></iframe>
+          </div>
+        </div>
+
+        <!-- Timelapse View -->
+        <div id="history-timelapse-view" class="history-view">
+          <div class="timelapse-controls">
+            <div class="timelapse-row">
+              <label style="font-size:13px;color:var(--text2)">From</label>
+              <input type="date" id="timelapse-from" class="search-input" style="width:150px">
+              <label style="font-size:13px;color:var(--text2)">To</label>
+              <input type="date" id="timelapse-to" class="search-input" style="width:150px">
+              <label style="font-size:13px;color:var(--text2)">Speed</label>
+              <select id="timelapse-speed" class="search-input" style="width:120px">
+                <option value="2000">Slow (2s)</option>
+                <option value="1000" selected>Normal (1s)</option>
+                <option value="300">Fast (0.3s)</option>
+              </select>
+            </div>
+            <div class="timelapse-row">
+              <button class="btn-primary" style="width:auto;padding:8px 20px" id="timelapse-play-btn" onclick="timelapsePlay()">▶ Play</button>
+              <button class="btn-secondary" id="timelapse-pause-btn" onclick="timelapsePause()" disabled>⏸ Pause</button>
+              <button class="btn-secondary" onclick="timelapseStep(-1)">⏮ Prev</button>
+              <button class="btn-secondary" onclick="timelapseStep(1)">Next ⏭</button>
+              <button class="btn-secondary" onclick="timelapseSaveCamera()">📍 Set Viewpoint</button>
+              <span id="timelapse-frame-label" style="font-size:13px;color:var(--text2);margin-left:8px"></span>
+            </div>
+            <div class="timelapse-progress-bar">
+              <div class="timelapse-progress-fill" id="timelapse-progress-fill"></div>
+            </div>
+          </div>
+          <div class="history-viewer-wrap" style="display:block">
+            <iframe id="timelapse-bluemap-iframe" class="history-bluemap-frame" src="about:blank"></iframe>
+          </div>
+        </div>
+
+        <!-- Compare View -->
+        <div id="history-compare-view" class="history-view">
+          <div class="compare-pickers">
+            <div class="compare-picker">
+              <label style="font-size:13px;color:var(--text2);font-weight:500">Date A</label>
+              <input type="date" id="compare-date-a" class="search-input">
+              <button class="btn-secondary" onclick="loadCompareA()">Load</button>
+            </div>
+            <div class="compare-picker">
+              <label style="font-size:13px;color:var(--text2);font-weight:500">Date B</label>
+              <input type="date" id="compare-date-b" class="search-input">
+              <button class="btn-secondary" onclick="loadCompareB()">Load</button>
+            </div>
+          </div>
+          <div class="compare-frames">
+            <div class="compare-frame-wrap">
+              <div class="compare-frame-label" id="compare-label-a">—</div>
+              <iframe id="compare-iframe-a" class="history-bluemap-frame" src="about:blank"></iframe>
+            </div>
+            <div class="compare-frame-wrap">
+              <div class="compare-frame-label" id="compare-label-b">—</div>
+              <iframe id="compare-iframe-b" class="history-bluemap-frame" src="about:blank"></iframe>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Server Console -->
