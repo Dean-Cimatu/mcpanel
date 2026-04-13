@@ -7,6 +7,7 @@ const fs = require('fs');
 const { NodeSSH } = require('node-ssh');
 const { Rcon } = require('rcon-client');
 const { v4: uuidv4 } = require('uuid');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const db = require('./db');
 const { verifyToken } = require('./auth');
 const apiRouter = require('./routes/api');
@@ -18,6 +19,33 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(express.json());
+
+// ─── BlueMap Proxy ────────────────────────────────────────────────────────────
+
+app.use('/bluemap', createProxyMiddleware({
+  target: `http://${process.env.PC_HOST}:8100`,
+  changeOrigin: true,
+  pathRewrite: { '^/bluemap': '' },
+  on: {
+    error: (err, req, res) => {
+      res.status(502).send('BlueMap unavailable — PC may be offline');
+    }
+  }
+}));
+
+// ─── Snapshot Tile Proxy ──────────────────────────────────────────────────────
+
+app.use('/snapshots', createProxyMiddleware({
+  target: `http://${process.env.PC_HOST}:8200`,
+  changeOrigin: true,
+  pathRewrite: { '^/snapshots': '' },
+  on: {
+    error: (err, req, res) => {
+      res.status(502).send('Snapshot server unavailable');
+    }
+  }
+}));
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api', apiRouter);
 
@@ -93,7 +121,6 @@ async function startLogWatcher(serverId, logPath) {
   connect();
 }
 
-// Start log watchers only for online servers
 async function initLogWatchers() {
   const servers = getServers();
   for (const srv of servers) {
@@ -108,7 +135,6 @@ async function initLogWatchers() {
 }
 
 setTimeout(initLogWatchers, 5000);
-// Re-check every 5 minutes for newly started servers
 setInterval(initLogWatchers, 5 * 60 * 1000);
 
 // ─── Server Status Loop ───────────────────────────────────────────────────────
@@ -166,10 +192,8 @@ io.on('connection', (socket) => {
 
   socket.on('subscribe_server', (serverId) => {
     socket.join(`server:${serverId}`);
-    // Send last 100 log lines
     const logs = db.getLogs(serverId, 100, 0);
     socket.emit('log_history', { serverId, logs: logs.reverse() });
-    // Send last 50 chat messages from stored logs
     const chatLogs = db.getLogs(serverId, 200, 0, '<');
     const chatMessages = chatLogs.reverse().filter(l => l.line.match(/<([^>]+)> (.+)/));
     const chatHistory = chatMessages.slice(-50).map(l => {
