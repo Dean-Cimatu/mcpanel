@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCPanel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Auth Screen ─────────────────────────────────── -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-bg"></div>
+    <div class="auth-container">
+      <div class="auth-logo">
+        <span class="logo-bracket">[</span>MC<span class="logo-accent">PANEL</span><span class="logo-bracket">]</span>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Sign In</button>
+        <button class="auth-tab" data-tab="register">Register</button>
+      </div>
+      <div id="login-form" class="auth-form active">
+        <div class="field"><label>Username</label><input type="text" id="login-username" placeholder="your username" autocomplete="off"></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••"></div>
+        <button class="btn-primary" id="login-btn">Sign In</button>
+        <div id="login-error" class="error-msg"></div>
+      </div>
+      <div id="register-form" class="auth-form">
+        <div class="field"><label>Username</label><input type="text" id="reg-username" placeholder="choose a username" autocomplete="off"></div>
+        <div class="field"><label>Password</label><input type="password" id="reg-password" placeholder="••••••••"></div>
+        <div class="field"><label>Invite Code</label><input type="text" id="reg-code" placeholder="XXXXXXXX" style="text-transform:uppercase"></div>
+        <button class="btn-primary" id="register-btn">Create Account</button>
+        <div id="register-error" class="error-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel Screen ────────────────────────────────── -->
+  <div id="panel-screen" class="screen">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-icon">MC</div>
+          Panel
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Overview</div>
+        <a class="nav-item active" data-page="dashboard">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          Dashboard
+        </a>
+        <a class="nav-item" data-page="stats">
+          <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+          System Stats
+        </a>
+        <a class="nav-item" data-page="backups">
+          <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+          Backups
+        </a>
+      </div>
+
+      <div class="nav-group" id="servers-nav">
+        <div class="nav-group-label">Servers</div>
+      </div>
+
+      <div class="nav-group admin-only hidden" id="admin-nav">
+        <div class="nav-group-label">Admin</div>
+        <a class="nav-item" data-page="files">
+          <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+          File Manager
+        </a>
+        <a class="nav-item" data-page="users">
+          <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+          Users
+        </a>
+        <a class="nav-item" data-page="invites">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          Invites
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div class="user-avatar" id="user-avatar"></div>
+          <div>
+            <div class="user-name" id="user-name"></div>
+            <div class="mt-4"><span class="role-pill" id="user-role-pill"></span></div>
+          </div>
+        </div>
+        <button class="btn-logout" id="logout-btn">Sign Out</button>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="main-content">
+
+      <!-- Dashboard -->
+      <div id="page-dashboard" class="page active">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-subtitle">All servers at a glance</div>
+          </div>
+          <div class="header-actions">
+            <div class="header-time" id="header-time"></div>
+          </div>
+        </div>
+        <div class="infra-bar">
+          <div class="infra-item">
+            <span class="status-dot online" id="pi-status-dot"></span>
+            <span class="infra-label" id="pi-status-label">Pi Online</span>
+          </div>
+          <div class="infra-item">
+            <span class="status-dot offline" id="pc-status-dot"></span>
+            <span class="infra-label" id="pc-status-label">PC Offline</span>
+          </div>
+          <button class="card-action-btn admin-only hidden" id="wake-pc-btn" onclick="wakePc()">Wake PC</button>
+        </div>
+        <div class="server-grid" id="server-grid"></div>
+      </div>
+
+      <!-- Stats -->
+      <div id="page-stats" class="page">
+        <div class="page-header">
+          <div><div class="page-title">System Stats</div><div class="page-subtitle">Live hardware metrics</div></div>
+        </div>
+        <div class="stats-machines">
+          <div class="stats-machine-block">
+            <div class="stats-machine-title">Raspberry Pi 5</div>
+            <div class="stats-cards">
+              <div class="stat-card">
+                <div class="stat-label">CPU</div>
+                <div class="stat-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke-width="8"/><circle cx="50" cy="50" r="38" fill="none" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" transform="rotate(-90 50 50)" id="cpu-circle"/></svg><div class="stat-value" id="cpu-value">—</div></div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">RAM</div>
+                <div class="stat-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke-width="8"/><circle cx="50" cy="50" r="38" fill="none" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" transform="rotate(-90 50 50)" id="ram-circle"/></svg><div class="stat-value" id="ram-value">—</div></div>
+                <div class="stat-sub" id="ram-sub"></div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Disk</div>
+                <div class="stat-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke-width="8"/><circle cx="50" cy="50" r="38" fill="none" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" transform="rotate(-90 50 50)" id="disk-circle"/></svg><div class="stat-value" id="disk-value">—</div></div>
+                <div class="stat-sub" id="disk-sub"></div>
+              </div>
+            </div>
+          </div>
+          <div class="stats-machine-block">
+            <div class="stats-machine-title">Gaming PC</div>
+            <div class="stats-cards">
+              <div class="stat-card">
+                <div class="stat-label">CPU</div>
+                <div class="stat-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke-width="8"/><circle cx="50" cy="50" r="38" fill="none" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" transform="rotate(-90 50 50)" id="pc-cpu-circle"/></svg><div class="stat-value" id="pc-cpu-value">—</div></div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">RAM</div>
+                <div class="stat-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke-width="8"/><circle cx="50" cy="50" r="38" fill="none" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" transform="rotate(-90 50 50)" id="pc-ram-circle"/></svg><div class="stat-value" id="pc-ram-value">—</div></div>
+                <div class="stat-sub" id="pc-ram-sub"></div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Disk</div>
+                <div class="stat-ring"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke-width="8"/><circle cx="50" cy="50" r="38" fill="none" stroke-width="8" stroke-dasharray="238.76" stroke-dashoffset="238.76" stroke-linecap="round" transform="rotate(-90 50 50)" id="pc-disk-circle"/></svg><div class="stat-value" id="pc-disk-value">—</div></div>
+                <div class="stat-sub" id="pc-disk-sub"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backups -->
+      <div id="page-backups" class="page">
+        <div class="page-header">
+          <div><div class="page-title">Backups</div><div class="page-subtitle">Archive history and manual triggers</div></div>
+        </div>
+        <div class="backup-grid" id="backup-grid"></div>
+      </div>
+
+      <!-- Server Console -->
+      <div id="page-server" class="page">
+        <div class="page-header">
+          <div>
+            <div class="page-title" id="server-page-title">Server</div>
+            <div class="page-subtitle" id="server-page-subtitle"></div>
+          </div>
+          <div class="header-actions" id="server-header-actions"></div>
+        </div>
+        <div class="server-page-layout">
+          <div class="server-main-panel">
+            <div class="console-tabs">
+              <button class="console-tab active" data-tab="console">Console</button>
+              <button class="console-tab" data-tab="chat">Chat</button>
+            </div>
+            <div id="console-panel" class="console-panel active">
+              <div class="console-toolbar">
+                <input type="text" id="log-search" class="search-input" placeholder="Search logs…">
+                <span id="log-count" class="log-count"></span>
+              </div>
+              <div class="console-output" id="console-output"></div>
+              <div class="console-input-bar admin-only hidden" id="console-input-bar">
+                <span class="console-prompt">›</span>
+                <input type="text" id="console-cmd" placeholder="Enter command…">
+                <button id="console-send">Send</button>
+              </div>
+            </div>
+            <div id="chat-panel" class="console-panel">
+              <div class="console-toolbar" style="border-top:none">
+                <span style="font-size:12px;color:var(--text2)">Live in-game chat</span>
+              </div>
+              <div class="chat-output" id="chat-output">
+                <div class="chat-empty">No messages yet — chat will appear here live</div>
+              </div>
+            </div>
+          </div>
+          <div class="server-info-panel" id="server-info-panel">
+            <div class="info-block">
+              <div class="info-block-title">Status</div>
+              <div class="info-row"><span class="info-row-label">State</span><span class="info-row-value" id="info-state">—</span></div>
+              <div class="info-row"><span class="info-row-label">TPS (1m)</span><span class="info-row-value" id="info-tps">—</span></div>
+              <div class="info-row"><span class="info-row-label">Players</span><span class="info-row-value" id="info-players">—</span></div>
+              <div class="info-row"><span class="info-row-label">Address</span><span class="info-row-value" id="info-address" style="font-size:11px">—</span></div>
+            </div>
+            <div class="info-block">
+              <div class="info-block-title">Online Players</div>
+              <div class="online-players-list" id="online-players-list">
+                <div style="font-size:12px;color:var(--text3)">No players online</div>
+              </div>
+            </div>
+            <div class="info-block admin-only hidden" id="server-admin-actions">
+              <div class="info-block-title">Actions</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <button class="btn-secondary" style="width:100%;justify-content:center" id="server-backup-btn">
+                  <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
+                  Run Backup
+                </button>
+                <button class="btn-secondary" style="width:100%;justify-content:center" id="server-stop-btn">
+                  <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:currentColor"><path d="M6 6h12v12H6z"/></svg>
+                  Stop Server
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- File Manager -->
+      <div id="page-files" class="page">
+        <div class="page-header">
+          <div><div class="page-title">File Manager</div><div class="page-subtitle">Browse and manage server files</div></div>
+        </div>
+        <div class="file-manager-layout">
+          <div class="file-sidebar">
+            <div class="nav-group-label" style="padding:0 0 8px">Quick Access</div>
+            <div class="file-shortcut" data-path="plugins" data-server="">
+              <span class="file-shortcut-icon">⚙️</span> Plugins
+            </div>
+            <div class="file-shortcut" data-path="mods" data-server="">
+              <span class="file-shortcut-icon">🧩</span> Mods
+            </div>
+            <div class="file-shortcut" data-path="world" data-server="">
+              <span class="file-shortcut-icon">🌍</span> World
+            </div>
+            <div class="file-shortcut" data-path="config" data-server="">
+              <span class="file-shortcut-icon">📄</span> Config
+            </div>
+            <div style="height:1px;background:var(--border);margin:10px 0"></div>
+            <div class="nav-group-label" style="padding:0 0 8px">Server</div>
+            <div id="file-server-shortcuts"></div>
+          </div>
+          <div class="file-main">
+            <div class="upload-zone" id="upload-zone">
+              <input type="file" id="file-upload-input" multiple>
+              <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor;margin-bottom:6px;opacity:0.5"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+              <div>Drop files here or <strong>click to upload</strong></div>
+              <div style="font-size:11px;margin-top:3px;opacity:0.7">Plugins, mods, configs — dropped directly to current folder</div>
+            </div>
+            <div class="upload-progress-list" id="upload-progress-list"></div>
+            <div class="file-toolbar">
+              <div class="breadcrumb" id="file-breadcrumb">C:/MinecraftServer</div>
+              <button class="btn-secondary" id="file-up-btn">↑ Up</button>
+            </div>
+            <div class="file-list">
+              <div class="file-list-header">
+                <div>Name</div><div>Size</div><div>Modified</div><div>Actions</div>
+              </div>
+              <div id="file-list-body"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users -->
+      <div id="page-users" class="page">
+        <div class="page-header">
+          <div><div class="page-title">Users</div><div class="page-subtitle">Manage panel accounts and permissions</div></div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Username</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Invites -->
+      <div id="page-invites" class="page">
+        <div class="page-header">
+          <div><div class="page-title">Invite Codes</div><div class="page-subtitle">Generate single-use registration codes</div></div>
+          <div class="header-actions">
+            <button class="btn-primary" style="width:auto;padding:8px 18px" id="gen-invite-btn">Generate Code</button>
+          </div>
+        </div>
+        <div id="invite-result"></div>
+        <div style="margin-top:20px;font-size:13px;color:var(--text2)">
+          Share the URL and code via Discord using the <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">panel</code> bot command.
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirm-modal">
+    <div class="modal">
+      <div class="modal-title" id="modal-title">Confirm</div>
+      <div class="modal-subtitle" id="modal-subtitle"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="modal-cancel">Cancel</button>
+        <button class="btn-danger" id="modal-confirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

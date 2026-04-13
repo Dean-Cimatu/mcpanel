@@ -1,0 +1,4 @@
+node_modules/
+panel.env
+mcpanel.db
+*.log
