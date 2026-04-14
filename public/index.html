@@ -198,7 +198,6 @@
         <div class="history-view-tabs">
           <button class="history-tab active" data-view="calendar">📅 Calendar</button>
           <button class="history-tab" data-view="timeline">🎞 Timeline</button>
-          <button class="history-tab" data-view="timelapse">▶ Timelapse</button>
           <button class="history-tab" data-view="compare">⚖ Compare</button>
         </div>
 
@@ -234,37 +233,6 @@
           </div>
         </div>
 
-        <!-- Timelapse View -->
-        <div id="history-timelapse-view" class="history-view">
-          <div class="timelapse-controls">
-            <div class="timelapse-row">
-              <label style="font-size:13px;color:var(--text2)">From</label>
-              <input type="date" id="timelapse-from" class="search-input" style="width:150px">
-              <label style="font-size:13px;color:var(--text2)">To</label>
-              <input type="date" id="timelapse-to" class="search-input" style="width:150px">
-              <label style="font-size:13px;color:var(--text2)">Speed</label>
-              <select id="timelapse-speed" class="search-input" style="width:120px">
-                <option value="2000">Slow (2s)</option>
-                <option value="1000" selected>Normal (1s)</option>
-                <option value="300">Fast (0.3s)</option>
-              </select>
-            </div>
-            <div class="timelapse-row">
-              <button class="btn-primary" style="width:auto;padding:8px 20px" id="timelapse-play-btn" onclick="timelapsePlay()">▶ Play</button>
-              <button class="btn-secondary" id="timelapse-pause-btn" onclick="timelapsePause()" disabled>⏸ Pause</button>
-              <button class="btn-secondary" onclick="timelapseStep(-1)">⏮ Prev</button>
-              <button class="btn-secondary" onclick="timelapseStep(1)">Next ⏭</button>
-              <button class="btn-secondary" onclick="timelapseSaveCamera()">📍 Set Viewpoint</button>
-              <span id="timelapse-frame-label" style="font-size:13px;color:var(--text2);margin-left:8px"></span>
-            </div>
-            <div class="timelapse-progress-bar">
-              <div class="timelapse-progress-fill" id="timelapse-progress-fill"></div>
-            </div>
-          </div>
-          <div class="history-viewer-wrap" style="display:block">
-            <iframe id="timelapse-bluemap-iframe" class="history-bluemap-frame" src="about:blank"></iframe>
-          </div>
-        </div>
 
         <!-- Compare View -->
         <div id="history-compare-view" class="history-view">

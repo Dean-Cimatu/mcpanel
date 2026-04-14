@@ -373,57 +373,9 @@ function updateTimelapseRange() {
   document.getElementById('timelapse-to').value = dates[dates.length - 1];
 }
 
-function timelapsePlay() {
-  const from = document.getElementById('timelapse-from').value;
-  const to = document.getElementById('timelapse-to').value;
-  const speed = parseInt(document.getElementById('timelapse-speed').value);
 
-  timelapseDates = historySnapshots.filter(s => s.date >= from && s.date <= to).map(s => s.date);
-  if (!timelapseDates.length) { showToast('No snapshots in selected range', 'error'); return; }
 
-  timelapseIndex = 0;
-  document.getElementById('timelapse-play-btn').disabled = true;
-  document.getElementById('timelapse-pause-btn').disabled = false;
 
-  function showFrame() {
-    const dateStr = timelapseDates[timelapseIndex];
-    document.getElementById('timelapse-bluemap-iframe').src = `/snapshots/${historyServerId}/${dateStr}/`;
-    document.getElementById('timelapse-frame-label').textContent = `Day ${timelapseIndex + 1} of ${timelapseDates.length} — ${dateStr}`;
-    const pct = ((timelapseIndex + 1) / timelapseDates.length) * 100;
-    document.getElementById('timelapse-progress-fill').style.width = `${pct}%`;
-    timelapseIndex++;
-    if (timelapseIndex < timelapseDates.length) {
-      timelapseTimer = setTimeout(showFrame, speed);
-    } else {
-      timelapsePause();
-    }
-  }
-  showFrame();
-}
-
-function timelapsePause() {
-  clearTimeout(timelapseTimer);
-  document.getElementById('timelapse-play-btn').disabled = false;
-  document.getElementById('timelapse-pause-btn').disabled = true;
-}
-
-function timelapseStep(dir) {
-  timelapsePause();
-  if (!timelapseDates.length) {
-    const from = document.getElementById('timelapse-from').value;
-    const to = document.getElementById('timelapse-to').value;
-    timelapseDates = historySnapshots.filter(s => s.date >= from && s.date <= to).map(s => s.date);
-  }
-  timelapseIndex = Math.max(0, Math.min(timelapseDates.length - 1, timelapseIndex + dir));
-  const dateStr = timelapseDates[timelapseIndex];
-  if (!dateStr) return;
-  document.getElementById('timelapse-bluemap-iframe').src = `/snapshots/${historyServerId}/${dateStr}/`;
-  document.getElementById('timelapse-frame-label').textContent = `Day ${timelapseIndex + 1} of ${timelapseDates.length} — ${dateStr}`;
-}
-
-function timelapseSaveCamera() {
-  showToast('Viewpoint saved — timelapse will use current map position', 'success');
-}
 
 function loadCompareA() {
   const date = document.getElementById('compare-date-a').value;
