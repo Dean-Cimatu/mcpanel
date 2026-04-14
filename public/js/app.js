@@ -332,7 +332,7 @@ function loadSnapshotViewer(dateStr) {
   const iframe = document.getElementById('history-bluemap-iframe');
   const label = document.getElementById('history-viewer-label');
   label.textContent = `World on ${dateStr}`;
-  iframe.src = BLUEMAP_URL;
+  iframe.src = `/snapshots/${historyServerId}/${dateStr}/`;
   wrap.style.display = 'block';
   wrap.scrollIntoView({ behavior: 'smooth' });
 }
@@ -362,7 +362,7 @@ function loadTimelineSnapshot(dateStr, card) {
   card.classList.add('selected');
   const wrap = document.getElementById('timeline-viewer-wrap');
   const iframe = document.getElementById('timeline-bluemap-iframe');
-  iframe.src = BLUEMAP_URL;
+  iframe.src = `/snapshots/${historyServerId}/${dateStr}/`;
   wrap.style.display = 'block';
 }
 
@@ -387,7 +387,7 @@ function timelapsePlay() {
 
   function showFrame() {
     const dateStr = timelapseDates[timelapseIndex];
-    document.getElementById('timelapse-bluemap-iframe').src = BLUEMAP_URL;
+    document.getElementById('timelapse-bluemap-iframe').src = `/snapshots/${historyServerId}/${dateStr}/`;
     document.getElementById('timelapse-frame-label').textContent = `Day ${timelapseIndex + 1} of ${timelapseDates.length} — ${dateStr}`;
     const pct = ((timelapseIndex + 1) / timelapseDates.length) * 100;
     document.getElementById('timelapse-progress-fill').style.width = `${pct}%`;
@@ -417,7 +417,7 @@ function timelapseStep(dir) {
   timelapseIndex = Math.max(0, Math.min(timelapseDates.length - 1, timelapseIndex + dir));
   const dateStr = timelapseDates[timelapseIndex];
   if (!dateStr) return;
-  document.getElementById('timelapse-bluemap-iframe').src = BLUEMAP_URL;
+  document.getElementById('timelapse-bluemap-iframe').src = `/snapshots/${historyServerId}/${dateStr}/`;
   document.getElementById('timelapse-frame-label').textContent = `Day ${timelapseIndex + 1} of ${timelapseDates.length} — ${dateStr}`;
 }
 
@@ -429,14 +429,14 @@ function loadCompareA() {
   const date = document.getElementById('compare-date-a').value;
   if (!date) return;
   document.getElementById('compare-label-a').textContent = date;
-  document.getElementById('compare-iframe-a').src = BLUEMAP_URL;
+  document.getElementById('compare-iframe-a').src = `/snapshots/${historyServerId}/${date}/`;
 }
 
 function loadCompareB() {
   const date = document.getElementById('compare-date-b').value;
   if (!date) return;
   document.getElementById('compare-label-b').textContent = date;
-  document.getElementById('compare-iframe-b').src = BLUEMAP_URL;
+  document.getElementById('compare-iframe-b').src = `/snapshots/${historyServerId}/${date}/`;
 }
 
 // ── Dashboard ─────────────────────────────────────────
